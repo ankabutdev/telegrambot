@@ -1,4 +1,5 @@
-﻿using TelegramBot.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using TelegramBot.Data;
 using TelegramBot.Entity;
 
 namespace TelegramBot.Services;
@@ -17,13 +18,14 @@ public class UserService
 
     public async Task<(bool IsSuccess, string? ErrorMessage)> AddUserAsync(User user)
     {
-
+        if (await Exists(user.UserId))
+            return (false, "User Exists!");
 
         try
         {
             var result = await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
-            
+
             return (true, null);
         }
         catch (Exception ex)
@@ -60,9 +62,11 @@ public class UserService
         return await _context.Users.FindAsync(userId);
     }
 
-    public async Task<string?> GetUserLanguageCodeAsync(long userId)
+    public async Task<string?> GetUserLanguageCodeAsync(long? userId)
     {
         var user = await GetUserAsync(userId);
         return user?.LanguageCode;
     }
+    public async Task<bool> Exists(long? userId)
+        => await _context.Users.AnyAsync(x => x.UserId == userId);
 }

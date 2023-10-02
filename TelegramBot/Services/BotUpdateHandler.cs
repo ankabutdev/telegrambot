@@ -67,13 +67,6 @@ public partial class BotUpdateHandler : IUpdateHandler
         }
     }
 
-    private Task HandlerUnknownUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Update type {update.Type} received", update.Type);
-
-        return Task.CompletedTask;
-    }
-
     private async Task<CultureInfo> GetCultureForUser(Update update)
     {
         User? from = update.Type switch
@@ -85,10 +78,37 @@ public partial class BotUpdateHandler : IUpdateHandler
             _ => update?.Message?.From
         };
 
-        var user = await _userService.GetUserAsync(from?.Id);
+        var result = await _userService.AddUserAsync(new Entity.User()
+        {
+            FirstName = from?.FirstName,
+            LastName = from.LastName,
+            ChatId = update.Message.Chat.Id,
+            UserId = from.Id,
+            Username = from.Username,
+            LanguageCode = from.LanguageCode,
+            CreatedAt = DateTimeOffset.UtcNow,
+            LastInteractionAt = DateTimeOffset.UtcNow
+        });
 
-        var culture = new CultureInfo(user?.LanguageCode ?? "uz-Uz");
+        if (result.IsSuccess)
+        {
+            _logger.LogInformation("New user added: {from.Id}", from.Id);
+        }
+        else
+        {
+            _logger.LogInformation("User not Added: {from.Id}, {result.ErrorMessage}", from.Id, result.ErrorMessage);
+        }
 
-        return new CultureInfo("en-Us");
+
+        var language = await _userService.GetUserLanguageCodeAsync(from?.Id);
+
+        return new CultureInfo(language ?? "uz-Uz");
+    }
+
+    private Task HandlerUnknownUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Update type {update.Type} received", update.Type);
+
+        return Task.CompletedTask;
     }
 }
