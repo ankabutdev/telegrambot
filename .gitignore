@@ -396,5 +396,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-appsettings.json
-/TelegramBot/appsettings.json
+#/TelegramBot/appsettings.json
